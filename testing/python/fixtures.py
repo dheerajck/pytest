@@ -1,4 +1,6 @@
 # mypy: allow-untyped-defs
+from __future__ import annotations
+
 import os
 from pathlib import Path
 import sys
@@ -933,7 +935,7 @@ class TestRequestBasic:
     ) -> None:
         """
         Ensure exceptions raised during teardown by finalizers are suppressed
-        until all finalizers are called, then re-reaised together in an
+        until all finalizers are called, then re-raised together in an
         exception group (#2440)
         """
         pytester.makepyfile(
@@ -2219,6 +2221,25 @@ class TestAutouseManagement:
         reprec = pytester.inline_run("-s")
         reprec.assertoutcome(passed=2)
 
+    def test_reordering_catastrophic_performance(self, pytester: Pytester) -> None:
+        """Check that a certain high-scope parametrization pattern doesn't cause
+        a catasrophic slowdown.
+
+        Regression test for #12355.
+        """
+        pytester.makepyfile("""
+            import pytest
+
+            params = tuple("abcdefghijklmnopqrstuvwxyz")
+            @pytest.mark.parametrize(params, [range(len(params))] * 3, scope="module")
+            def test_parametrize(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z):
+                pass
+        """)
+
+        result = pytester.runpytest()
+
+        result.assert_outcomes(passed=3)
+
 
 class TestFixtureMarker:
     def test_parametrize(self, pytester: Pytester) -> None:
@@ -2268,18 +2289,17 @@ class TestFixtureMarker:
         This was a regression introduced in the fix for #736.
         """
         pytester.makepyfile(
-            """
+            f"""
             import pytest
 
             @pytest.fixture(params=[1, 2])
             def fixt(request):
                 return request.param
 
-            @pytest.mark.parametrize(%s, [(3, 'x'), (4, 'x')])
+            @pytest.mark.parametrize({param_args}, [(3, 'x'), (4, 'x')])
             def test_foo(fixt, val):
                 pass
         """
-            % param_args
         )
         reprec = pytester.inline_run()
         reprec.assertoutcome(passed=2)
@@ -3397,6 +3417,28 @@ class TestErrors:
             ["*def gen(qwe123):*", "*fixture*qwe123*not found*", "*1 error*"]
         )
 
+    def test_cached_exception_doesnt_get_longer(self, pytester: Pytester) -> None:
+        """Regression test for #12204."""
+        pytester.makepyfile(
+            """
+            import pytest
+            @pytest.fixture(scope="session")
+            def bad(): 1 / 0
+
+            def test_1(bad): pass
+            def test_2(bad): pass
+            def test_3(bad): pass
+            """
+        )
+
+        result = pytester.runpytest_inprocess("--tb=native")
+        assert result.ret == ExitCode.TESTS_FAILED
+        failures = result.reprec.getfailures()  # type: ignore[attr-defined]
+        assert len(failures) == 3
+        lines1 = failures[1].longrepr.reprtraceback.reprentries[0].lines
+        lines2 = failures[2].longrepr.reprtraceback.reprentries[0].lines
+        assert len(lines1) == len(lines2)
+
 
 class TestShowFixtures:
     def test_funcarg_compat(self, pytester: Pytester) -> None:
@@ -4253,6 +4295,39 @@ class TestScopeOrdering:
         request = TopRequest(items[0], _ispytest=True)
         assert request.fixturenames == "s1 p1 m1 m2 c1 f2 f1".split()
 
+    def test_parametrized_package_scope_reordering(self, pytester: Pytester) -> None:
+        """A paramaterized package-scoped fixture correctly reorders items to
+        minimize setups & teardowns.
+
+        Regression test for #12328.
+        """
+        pytester.makepyfile(
+            __init__="",
+            conftest="""
+                import pytest
+                @pytest.fixture(scope="package", params=["a", "b"])
+                def fix(request):
+                    return request.param
+            """,
+            test_1="def test1(fix): pass",
+            test_2="def test2(fix): pass",
+        )
+
+        result = pytester.runpytest("--setup-plan")
+        assert result.ret == ExitCode.OK
+        result.stdout.fnmatch_lines(
+            [
+                "  SETUP    P fix['a']",
+                "        test_1.py::test1[a] (fixtures used: fix, request)",
+                "        test_2.py::test2[a] (fixtures used: fix, request)",
+                "  TEARDOWN P fix['a']",
+                "  SETUP    P fix['b']",
+                "        test_1.py::test1[b] (fixtures used: fix, request)",
+                "        test_2.py::test2[b] (fixtures used: fix, request)",
+                "  TEARDOWN P fix['b']",
+            ],
+        )
+
     def test_multiple_packages(self, pytester: Pytester) -> None:
         """Complex test involving multiple package fixtures. Make sure teardowns
         are executed in order.
@@ -4441,7 +4516,7 @@ def test_fixture_named_request(pytester: Pytester) -> None:
     result.stdout.fnmatch_lines(
         [
             "*'request' is a reserved word for fixtures, use another name:",
-            "  *test_fixture_named_request.py:6",
+            "  *test_fixture_named_request.py:8",
         ]
     )
 

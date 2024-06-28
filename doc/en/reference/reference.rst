@@ -7,9 +7,6 @@ API Reference
 
 This page contains the full reference to pytest's API.
 
-.. contents::
-    :depth: 3
-    :local:
 
 Constants
 ---------
@@ -59,10 +56,18 @@ pytest.fail
 
 .. autofunction:: pytest.fail(reason, [pytrace=True, msg=None])
 
+.. class:: pytest.fail.Exception
+
+    The exception raised by :func:`pytest.fail`.
+
 pytest.skip
 ~~~~~~~~~~~
 
 .. autofunction:: pytest.skip(reason, [allow_module_level=False, msg=None])
+
+.. class:: pytest.skip.Exception
+
+    The exception raised by :func:`pytest.skip`.
 
 .. _`pytest.importorskip ref`:
 
@@ -76,10 +81,18 @@ pytest.xfail
 
 .. autofunction:: pytest.xfail
 
+.. class:: pytest.xfail.Exception
+
+    The exception raised by :func:`pytest.xfail`.
+
 pytest.exit
 ~~~~~~~~~~~
 
 .. autofunction:: pytest.exit(reason, [returncode=None, msg=None])
+
+.. class:: pytest.exit.Exception
+
+    The exception raised by :func:`pytest.exit`.
 
 pytest.main
 ~~~~~~~~~~~
@@ -246,9 +259,10 @@ Marks a test function as *expected to fail*.
         to specify ``reason`` (see :ref:`condition string <string conditions>`).
     :keyword str reason:
         Reason why the test function is marked as xfail.
-    :keyword Type[Exception] raises:
+    :keyword raises:
         Exception class (or tuple of classes) expected to be raised by the test function; other exceptions will fail the test.
         Note that subclasses of the classes passed will also result in a match (similar to how the ``except`` statement works).
+    :type raises: Type[:py:exc:`Exception`]
 
     :keyword bool run:
         Whether the test function should actually be executed. If ``False``, the function will always xfail and will
@@ -636,7 +650,7 @@ Reference to all hooks which can be implemented by :ref:`conftest.py files <loca
 Bootstrapping hooks
 ~~~~~~~~~~~~~~~~~~~
 
-Bootstrapping hooks called for plugins registered early enough (internal and setuptools plugins).
+Bootstrapping hooks called for plugins registered early enough (internal and third-party plugins).
 
 .. hook:: pytest_load_initial_conftests
 .. autofunction:: pytest_load_initial_conftests
@@ -1133,8 +1147,9 @@ When set, pytest will print tracing and debug information.
 
 .. envvar:: PYTEST_DISABLE_PLUGIN_AUTOLOAD
 
-When set, disables plugin auto-loading through setuptools entrypoints. Only explicitly specified plugins will be
-loaded.
+When set, disables plugin auto-loading through :std:doc:`entry point packaging
+metadata <packaging:guides/creating-and-discovering-plugins>`. Only explicitly
+specified plugins will be loaded.
 
 .. envvar:: PYTEST_PLUGINS
 
@@ -1923,7 +1938,7 @@ All the command-line flags can be obtained by running ``pytest --help``::
 
     general:
       -k EXPRESSION         Only run tests which match the given substring
-                            expression. An expression is a Python evaluatable
+                            expression. An expression is a Python evaluable
                             expression where all names are substring-matched
                             against test names and their parent classes.
                             Example: -k 'test_method or test_other' matches all

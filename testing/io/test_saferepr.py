@@ -1,4 +1,6 @@
 # mypy: allow-untyped-defs
+from __future__ import annotations
+
 from _pytest._io.saferepr import DEFAULT_REPR_MAX_SIZE
 from _pytest._io.saferepr import saferepr
 from _pytest._io.saferepr import saferepr_unlimited
@@ -144,7 +146,7 @@ def test_big_repr():
 def test_repr_on_newstyle() -> None:
     class Function:
         def __repr__(self):
-            return "<%s>" % (self.name)  # type: ignore[attr-defined]
+            return f"<{self.name}>"  # type: ignore[attr-defined]
 
     assert saferepr(Function())
 

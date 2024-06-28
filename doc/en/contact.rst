@@ -22,22 +22,15 @@ Contact channels
   requests to GitHub.
 
 - ``#pytest`` `on irc.libera.chat <ircs://irc.libera.chat:6697/#pytest>`_ IRC
-  channel for random questions (using an IRC client, `via webchat
-  <https://web.libera.chat/#pytest>`_, or `via Matrix
-  <https://matrix.to/#/%23pytest:libera.chat>`_).
+  channel for random questions (using an IRC client, or `via webchat
+  <https://web.libera.chat/#pytest>`)
+- ``#pytest`` `on Matrix https://matrix.to/#/#pytest:matrix.org>`.
 
-- private mail to Holger.Krekel at gmail com if you want to communicate sensitive issues
-
-
-- `merlinux.eu`_ offers pytest and tox-related professional teaching and
-  consulting.
 
 .. _`pytest issue tracker`: https://github.com/pytest-dev/pytest/issues
 .. _`old issue tracker`: https://bitbucket.org/hpk42/py-trunk/issues/
 
 .. _`pytest discussions`: https://github.com/pytest-dev/pytest/discussions
-
-.. _`merlinux.eu`: https://merlinux.eu/
 
 .. _`get an account`:
 
